@@ -102,9 +102,10 @@ export async function fetchChatOrders() {
 }
 
 export async function markOrderReady(orderId: number) {
-  const res = await fetch(`${BASE}/api/admin/orders/${orderId}/ready`, {
-    method: 'POST',
-    headers: authHeaders(),
+  const res = await fetch(`${BASE}/api/admin/orders/${orderId}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ status: 'ready' }),
   });
   return json<any>(res);
 }

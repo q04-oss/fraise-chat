@@ -7,6 +7,7 @@ export interface Session {
 }
 
 export function saveSession(s: Session) {
+  if (typeof window === 'undefined') return;
   localStorage.setItem('fraise_chat_token', s.token);
   localStorage.setItem('fraise_chat_session', JSON.stringify(s));
 }
@@ -19,6 +20,7 @@ export function getSession(): Session | null {
 }
 
 export function clearSession() {
+  if (typeof window === 'undefined') return;
   localStorage.removeItem('fraise_chat_token');
   localStorage.removeItem('fraise_chat_session');
 }
