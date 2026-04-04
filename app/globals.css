@@ -1,26 +1,29 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@400&family=DM+Mono:wght@400&display=swap');
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --accent: #C9973A;
+  --bg: #F7F5F2;
+  --panel: #FFFFFF;
+  --text: #1C1C1E;
+  --muted: #8E8E93;
+  --border: #E5E1DA;
+  --card: #F0EDE8;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
 }
+
+.font-serif   { font-family: 'Playfair Display', serif; font-weight: 700; }
+.font-serif-i { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 400; }
+.font-mono    { font-family: 'DM Mono', monospace; }
+
+input, textarea, button, select { font-family: 'DM Mono', monospace; font-size: 13px; }
+a { color: inherit; text-decoration: none; }
