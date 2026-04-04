@@ -133,3 +133,54 @@ export async function deactivateBeacon(id: number) {
   });
   return json<any>(res);
 }
+
+// ─── Jobs ─────────────────────────────────────────────────────────────────────
+
+export async function fetchOperatorJobs() {
+  const res = await fetch(`${BASE}/api/jobs/operator`, { headers: authHeaders() });
+  return json<{ jobs: any[]; applications: any[] }>(res);
+}
+
+export async function postJob(payload: { title: string; description?: string; pay_cents: number; pay_type: string }) {
+  const res = await fetch(`${BASE}/api/jobs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return json<any>(res);
+}
+
+export async function deactivateJob(id: number) {
+  const res = await fetch(`${BASE}/api/jobs/${id}/deactivate`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+  });
+  return json<any>(res);
+}
+
+export async function scheduleInterview(applicationId: number, scheduledAt: string) {
+  const res = await fetch(`${BASE}/api/jobs/applications/${applicationId}/schedule`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ scheduled_at: scheduledAt }),
+  });
+  return json<any>(res);
+}
+
+export async function recordOutcome(applicationId: number, status: 'hired' | 'not_hired' | 'dismissed') {
+  const res = await fetch(`${BASE}/api/jobs/applications/${applicationId}/outcome`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ status }),
+  });
+  return json<any>(res);
+}
+
+export async function addEmployerStatement(applicationId: number, statement: string) {
+  const res = await fetch(`${BASE}/api/jobs/applications/${applicationId}/statement`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ statement }),
+  });
+  return json<any>(res);
+}
