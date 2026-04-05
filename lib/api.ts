@@ -553,6 +553,14 @@ export async function respondToCollectif(id: number, response: 'accepted' | 'dec
   return json<any>(res);
 }
 
+export async function confirmPopupCollectif(id: number) {
+  const res = await fetch(`${BASE}/api/admin/collectifs/${id}/confirm-popup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+  });
+  return json<{ ok: boolean; popup_id: number; popup: any }>(res);
+}
+
 // ─── Admin: Portal ────────────────────────────────────────────────────────────
 
 export async function fetchPortalActivity() {

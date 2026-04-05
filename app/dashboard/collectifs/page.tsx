@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { fetchAdminCollectifs, respondToCollectif } from '@/lib/api';
+import { fetchAdminCollectifs, respondToCollectif, confirmPopupCollectif } from '@/lib/api';
 
 function fmtCAD(cents: number) {
   return `CA$${(cents / 100).toLocaleString('en-CA', { minimumFractionDigits: 2 })}`;
@@ -25,6 +25,7 @@ export default function CollectifsPage() {
   const [respondingId, setRespondingId] = useState<number | null>(null);
   const [responseNote, setResponseNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const [confirmingPopupId, setConfirmingPopupId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchAdminCollectifs()
@@ -32,6 +33,21 @@ export default function CollectifsPage() {
       .catch((err: any) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
+
+  async function handleConfirmPopup(id: number) {
+    setConfirmingPopupId(id);
+    try {
+      const result = await confirmPopupCollectif(id);
+      setCollectifs(prev => prev.map(c => c.id === id
+        ? { ...c, business_response: 'accepted' }
+        : c));
+      alert(`Popup event created (id ${result.popup_id}). Edit it in the businesses admin to add coordinates, DJ, and capacity details.`);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setConfirmingPopupId(null);
+    }
+  }
 
   async function handleRespond(id: number, response: 'accepted' | 'declined') {
     setSaving(true);
@@ -61,7 +77,8 @@ export default function CollectifsPage() {
       {funded.length > 0 && (
         <div style={{ background: 'rgba(76,175,80,0.08)', border: '1px solid #4caf50', borderRadius: 10, padding: '12px 16px', marginBottom: 20 }}>
           <p className="font-mono" style={{ fontSize: 11, color: '#4caf50' }}>
-            {funded.length} collectif{funded.length > 1 ? 's' : ''} funded — awaiting business response
+            {funded.length} {funded.length > 1 ? 'items' : 'item'} funded — awaiting response
+            {funded.some((c: any) => c.collectif_type === 'popup') && ' · includes popup proposals'}
           </p>
         </div>
       )}
@@ -87,12 +104,16 @@ export default function CollectifsPage() {
         {filtered.map(c => {
           const progress = c.target_quantity > 0 ? Math.min(1, c.current_quantity / c.target_quantity) : 0;
           const totalCommitted = Number(c.total_committed_cents ?? 0);
+          const isPopup = c.collectif_type === 'popup';
           return (
             <div key={c.id} style={{ background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 12, padding: 18 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
                     <p className="font-serif" style={{ fontSize: 16, color: 'var(--text)' }}>{c.title}</p>
+                    {isPopup && (
+                      <span className="font-mono" style={{ fontSize: 8, letterSpacing: 1.5, color: 'var(--accent)', border: '1px solid var(--accent)', borderRadius: 4, padding: '1px 6px' }}>POPUP</span>
+                    )}
                     <span className="font-mono" style={{ fontSize: 9, letterSpacing: 1, color: STATUS_COLOR[c.status] ?? 'var(--muted)' }}>{c.status}</span>
                     {c.business_response !== 'pending' && (
                       <span className="font-mono" style={{ fontSize: 9, letterSpacing: 1, color: c.business_response === 'accepted' ? '#4caf50' : '#e57373' }}>
@@ -100,9 +121,15 @@ export default function CollectifsPage() {
                       </span>
                     )}
                   </div>
-                  <p className="font-mono" style={{ fontSize: 10, color: 'var(--muted)' }}>
-                    {c.business_name} · {c.proposed_discount_pct}% off · {fmtCAD(c.price_cents)}/unit · deadline {fmtDate(c.deadline)}
-                  </p>
+                  {isPopup ? (
+                    <p className="font-mono" style={{ fontSize: 10, color: 'var(--muted)' }}>
+                      {c.business_name} · {c.proposed_venue ?? '—'} · {c.proposed_date ?? '—'} · {fmtCAD(c.price_cents)} deposit · deadline {fmtDate(c.deadline)}
+                    </p>
+                  ) : (
+                    <p className="font-mono" style={{ fontSize: 10, color: 'var(--muted)' }}>
+                      {c.business_name} · {c.proposed_discount_pct}% off · {fmtCAD(c.price_cents)}/unit · deadline {fmtDate(c.deadline)}
+                    </p>
+                  )}
                   <p className="font-mono" style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>
                     by {c.creator_display_name ?? `user #${c.created_by}`} · {Number(c.commitment_count ?? 0)} committed · {fmtCAD(totalCommitted)} pooled
                   </p>
@@ -112,15 +139,26 @@ export default function CollectifsPage() {
                     </p>
                   )}
                 </div>
-                {c.status === 'funded' && c.business_response === 'pending' && respondingId !== c.id && (
-                  <button
-                    onClick={() => { setRespondingId(c.id); setResponseNote(''); }}
-                    className="font-mono"
-                    style={{ fontSize: 10, padding: '5px 12px', background: 'none', color: 'var(--accent)', border: '1px solid var(--border)', borderRadius: 7, cursor: 'pointer', flexShrink: 0, marginLeft: 12 }}
-                  >
-                    respond
-                  </button>
-                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0, marginLeft: 12 }}>
+                  {c.status === 'funded' && c.business_response === 'pending' && isPopup && confirmingPopupId !== c.id && (
+                    <button
+                      onClick={() => handleConfirmPopup(c.id)}
+                      className="font-mono"
+                      style={{ fontSize: 10, padding: '5px 12px', background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 7, cursor: 'pointer' }}
+                    >
+                      {confirmingPopupId === c.id ? '…' : 'create popup event'}
+                    </button>
+                  )}
+                  {c.status === 'funded' && c.business_response === 'pending' && respondingId !== c.id && (
+                    <button
+                      onClick={() => { setRespondingId(c.id); setResponseNote(''); }}
+                      className="font-mono"
+                      style={{ fontSize: 10, padding: '5px 12px', background: 'none', color: 'var(--accent)', border: '1px solid var(--border)', borderRadius: 7, cursor: 'pointer' }}
+                    >
+                      respond
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Progress bar */}
