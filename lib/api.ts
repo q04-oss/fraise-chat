@@ -221,6 +221,50 @@ export async function deactivateBeacon(id: number) {
   return json<any>(res);
 }
 
+// ─── Admin: Supplier ─────────────────────────────────────────────────────────
+
+export async function fetchSupplierAlerts() {
+  const res = await fetch(`${BASE}/api/supplier/alerts`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+// ─── Admin: Businesses / Chocolate Shops ─────────────────────────────────────
+
+export async function fetchAdminBusinesses() {
+  const res = await fetch(`${BASE}/api/admin/businesses`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function createBusiness(payload: {
+  name: string;
+  address: string;
+  location_type: string;
+  partner_name?: string;
+  operating_cost_cents?: number;
+  approved_by_admin?: boolean;
+}) {
+  const res = await fetch(`${BASE}/api/admin/businesses`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return json<any>(res);
+}
+
+export async function updateBusiness(id: number, payload: Record<string, any>) {
+  const res = await fetch(`${BASE}/api/admin/businesses/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return json<any>(res);
+}
+
+export async function fetchLocationFunding() {
+  const res = await fetch(`${BASE}/api/admin/location-funding`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
 // ─── Jobs ─────────────────────────────────────────────────────────────────────
 
 export async function fetchOperatorJobs() {
