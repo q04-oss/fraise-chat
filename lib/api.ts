@@ -221,6 +221,61 @@ export async function deactivateBeacon(id: number) {
   return json<any>(res);
 }
 
+// ─── Admin: Members ──────────────────────────────────────────────────────────
+
+export async function fetchAdminMemberships() {
+  const res = await fetch(`${BASE}/api/admin/memberships`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function fetchMembershipWaitlist() {
+  const res = await fetch(`${BASE}/api/admin/memberships/waitlist`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function setMemberPortrait(userId: number, portrait_url: string) {
+  const res = await fetch(`${BASE}/api/admin/users/${userId}/portrait`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ portrait_url }),
+  });
+  return json<any>(res);
+}
+
+// ─── Admin: Talent ────────────────────────────────────────────────────────────
+
+export async function fetchAdminContracts() {
+  const res = await fetch(`${BASE}/api/admin/contracts`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function fetchExpiringContracts() {
+  const res = await fetch(`${BASE}/api/admin/contracts/expiring-soon`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function fetchTalentLeaderboard() {
+  const res = await fetch(`${BASE}/api/admin/talent`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function sendContractOffer(payload: { business_id: number; user_id: number; starts_at: string; ends_at: string; note?: string }) {
+  const res = await fetch(`${BASE}/api/admin/contracts`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return json<any>(res);
+}
+
+export async function completeExpiredContracts() {
+  const res = await fetch(`${BASE}/api/admin/contracts/complete-expired`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  return json<any>(res);
+}
+
 // ─── Admin: Supplier ─────────────────────────────────────────────────────────
 
 export async function fetchSupplierAlerts() {
