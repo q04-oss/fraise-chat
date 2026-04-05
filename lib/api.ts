@@ -94,6 +94,93 @@ export async function fetchBusinesses() {
   return json<any[]>(res);
 }
 
+// ─── Admin: Varieties ─────────────────────────────────────────────────────────
+
+export async function fetchAdminVarieties() {
+  const res = await fetch(`${BASE}/api/admin/varieties`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function updateVariety(id: number, payload: { description?: string; image_url?: string; location_id?: number; active?: boolean }) {
+  const res = await fetch(`${BASE}/api/admin/varieties/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return json<any>(res);
+}
+
+export async function updateVarietyStock(id: number, stock_remaining: number) {
+  const res = await fetch(`${BASE}/api/admin/varieties/${id}/stock`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ stock_remaining }),
+  });
+  return json<any>(res);
+}
+
+// ─── Admin: Slots ─────────────────────────────────────────────────────────────
+
+export async function fetchAdminLocations() {
+  const res = await fetch(`${BASE}/api/admin/locations`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function fetchAdminTimeSlots(locationId?: number, date?: string) {
+  const params = new URLSearchParams();
+  if (locationId) params.set('location_id', String(locationId));
+  if (date) params.set('date', date);
+  const res = await fetch(`${BASE}/api/admin/time-slots?${params}`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function createTimeSlot(payload: { location_id: number; date: string; time: string; capacity: number }) {
+  const res = await fetch(`${BASE}/api/admin/time-slots`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return json<any>(res);
+}
+
+export async function updateTimeSlot(id: number, capacity: number) {
+  const res = await fetch(`${BASE}/api/admin/time-slots/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ capacity }),
+  });
+  return json<any>(res);
+}
+
+export async function deleteTimeSlot(id: number) {
+  const res = await fetch(`${BASE}/api/admin/time-slots/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  return json<any>(res);
+}
+
+// ─── Admin: Chocolatier ───────────────────────────────────────────────────────
+
+export async function fetchChocolatierOrders() {
+  const res = await fetch(`${BASE}/api/chocolatier/orders`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function fetchAdminOrders() {
+  const res = await fetch(`${BASE}/api/admin/orders`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function updateOrderStatus(id: number, status: string) {
+  const res = await fetch(`${BASE}/api/admin/orders/${id}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ status }),
+  });
+  return json<any>(res);
+}
+
 // ─── Orders ───────────────────────────────────────────────────────────────────
 
 export async function fetchChatOrders() {
