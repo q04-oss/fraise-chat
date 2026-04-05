@@ -527,3 +527,101 @@ export async function addEmployerStatement(applicationId: number, statement: str
   });
   return json<any>(res);
 }
+
+// ─── Admin: Portal ────────────────────────────────────────────────────────────
+
+export async function fetchPortalActivity() {
+  const res = await fetch(`${BASE}/api/admin/portal/activity`, { headers: authHeaders() });
+  return json<any>(res);
+}
+
+export async function fetchPortalContent() {
+  const res = await fetch(`${BASE}/api/admin/portal/content`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function deletePortalContent(id: number) {
+  const res = await fetch(`${BASE}/api/admin/portal/content/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  return json<any>(res);
+}
+
+export async function banUser(userId: number, reason?: string) {
+  const res = await fetch(`${BASE}/api/admin/users/${userId}/ban`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ reason }),
+  });
+  return json<any>(res);
+}
+
+// ─── Admin: Patronages ────────────────────────────────────────────────────────
+
+export async function fetchAdminPatronages() {
+  const res = await fetch(`${BASE}/api/admin/patronages`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function approvePatronage(id: number, price_cents: number) {
+  const res = await fetch(`${BASE}/api/admin/patronages/${id}/approve`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ price_cents }),
+  });
+  return json<any>(res);
+}
+
+export async function adjustPatronagePrice(id: number, price_cents: number) {
+  const res = await fetch(`${BASE}/api/admin/patronages/${id}/adjust-price`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ price_cents }),
+  });
+  return json<any>(res);
+}
+
+export async function fetchPatronTokens() {
+  const res = await fetch(`${BASE}/api/admin/patron-tokens`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+// ─── Admin: Greenhouses ───────────────────────────────────────────────────────
+
+export async function fetchAdminGreenhouses() {
+  const res = await fetch(`${BASE}/api/admin/greenhouses`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function createGreenhouse(payload: { name: string; location: string; description?: string; funding_goal_cents: number }) {
+  const res = await fetch(`${BASE}/api/admin/greenhouses`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return json<any>(res);
+}
+
+export async function updateGreenhouse(id: number, payload: { name?: string; location?: string; description?: string; funding_goal_cents?: number; status?: string }) {
+  const res = await fetch(`${BASE}/api/admin/greenhouses/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return json<any>(res);
+}
+
+export async function fetchProvenanceTokens() {
+  const res = await fetch(`${BASE}/api/admin/provenance-tokens`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function setProvenanceNfc(id: number, nfc_token: string) {
+  const res = await fetch(`${BASE}/api/admin/provenance-tokens/${id}/nfc`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ nfc_token }),
+  });
+  return json<any>(res);
+}
