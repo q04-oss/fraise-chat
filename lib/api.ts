@@ -265,6 +265,108 @@ export async function fetchLocationFunding() {
   return json<any[]>(res);
 }
 
+// ─── Admin: Popups ───────────────────────────────────────────────────────────
+
+export async function fetchAdminPopups() {
+  const res = await fetch(`${BASE}/api/admin/popups`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function createPopup(payload: Record<string, any>) {
+  const res = await fetch(`${BASE}/api/admin/businesses`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ ...payload, type: 'popup' }),
+  });
+  return json<any>(res);
+}
+
+export async function updatePopup(id: number, payload: Record<string, any>) {
+  const res = await fetch(`${BASE}/api/admin/popups/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return json<any>(res);
+}
+
+export async function fetchPopupNominations(popupId: number) {
+  const res = await fetch(`${BASE}/api/admin/popups/${popupId}/nominations`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function fetchPopupRsvps(popupId: number) {
+  const res = await fetch(`${BASE}/api/admin/popups/${popupId}/rsvps`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function sendDjOffer(popupId: number, payload: { dj_user_id: number; allocation_boxes?: number; note?: string }) {
+  const res = await fetch(`${BASE}/api/admin/popups/${popupId}/dj-offer`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return json<any>(res);
+}
+
+export async function setAuditionResult(businessId: number, passed: boolean) {
+  const res = await fetch(`${BASE}/api/admin/businesses/${businessId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ audition_passed: passed }),
+  });
+  return json<any>(res);
+}
+
+// ─── Admin: Popup Requests ────────────────────────────────────────────────────
+
+export async function fetchPopupRequests() {
+  const res = await fetch(`${BASE}/api/admin/popup-requests`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function updatePopupRequest(id: number, status: 'approved' | 'rejected') {
+  const res = await fetch(`${BASE}/api/admin/popup-requests/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ status }),
+  });
+  return json<any>(res);
+}
+
+// ─── Admin: Portraits ─────────────────────────────────────────────────────────
+
+export async function fetchPortraits(businessId: number) {
+  const res = await fetch(`${BASE}/api/admin/portraits?business_id=${businessId}`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function createPortrait(payload: { business_id: number; image_url: string; subject_name?: string; season?: string; campaign_title?: string; sort_order?: number }) {
+  const res = await fetch(`${BASE}/api/admin/portraits`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return json<any>(res);
+}
+
+export async function updatePortrait(id: number, payload: { sort_order: number }) {
+  const res = await fetch(`${BASE}/api/admin/portraits/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return json<any>(res);
+}
+
+export async function deletePortrait(id: number) {
+  const res = await fetch(`${BASE}/api/admin/portraits/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  return json<any>(res);
+}
+
 // ─── Jobs ─────────────────────────────────────────────────────────────────────
 
 export async function fetchOperatorJobs() {
