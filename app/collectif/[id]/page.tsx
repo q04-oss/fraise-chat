@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'https://maison-fraise-fund-production.up.railway.app';
@@ -31,12 +31,17 @@ export default function CollectifPublicPage() {
   const [collectif, setCollectif] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     fetch(`${API}/api/collectifs/${id}`)
-      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+      .then(r => {
+        if (r.status === 404) { setNotFound(true); throw new Error(); }
+        if (!r.ok) { setFetchError(true); throw new Error(); }
+        return r.json();
+      })
       .then(setCollectif)
-      .catch(() => setNotFound(true))
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -48,11 +53,21 @@ export default function CollectifPublicPage() {
     );
   }
 
-  if (notFound || !collectif) {
+  if (notFound) {
     return (
       <div style={styles.page}>
         <div style={styles.card}>
           <p className="font-mono" style={{ color: 'var(--muted)', fontSize: 12 }}>collectif not found</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (fetchError || !collectif) {
+    return (
+      <div style={styles.page}>
+        <div style={styles.card}>
+          <p className="font-mono" style={{ color: 'var(--muted)', fontSize: 12 }}>could not load collectif — try again later</p>
         </div>
       </div>
     );
@@ -100,8 +115,8 @@ export default function CollectifPublicPage() {
             { label: 'DISCOUNT', value: `${collectif.proposed_discount_pct}%` },
             { label: 'PRICE/UNIT', value: fmtCAD(collectif.price_cents) },
             { label: 'DEADLINE', value: fmtDate(collectif.deadline) },
-          ].map(s => (
-            <div key={s.label} style={styles.stat}>
+          ].map((s, i, arr) => (
+            <div key={s.label} style={{ ...styles.stat, ...(i < arr.length - 1 ? { borderRight: '1px solid var(--border)' } : {}) }}>
               <p className="font-mono" style={{ fontSize: 8, letterSpacing: 1.5, color: 'var(--muted)' }}>{s.label}</p>
               <p className="font-mono" style={{ fontSize: 14, color: 'var(--text)', marginTop: 4 }}>{s.value}</p>
             </div>
@@ -180,7 +195,6 @@ const styles: Record<string, React.CSSProperties> = {
     flex: 1,
     padding: '14px 10px',
     textAlign: 'center',
-    borderRight: '1px solid var(--border)',
   },
   ctaBtn: {
     display: 'inline-block',
