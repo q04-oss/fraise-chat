@@ -110,6 +110,15 @@ export async function updateVariety(id: number, payload: { description?: string;
   return json<any>(res);
 }
 
+export async function updateVarietySortOrder(id: number, sort_order: number) {
+  const res = await fetch(`${BASE}/api/admin/varieties/${id}/sort-order`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ sort_order }),
+  });
+  return json<any>(res);
+}
+
 export async function updateVarietyStock(id: number, stock_remaining: number) {
   const res = await fetch(`${BASE}/api/admin/varieties/${id}/stock`, {
     method: 'PATCH',

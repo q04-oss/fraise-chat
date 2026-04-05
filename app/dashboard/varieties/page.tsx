@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { fetchAdminVarieties, fetchAdminLocations, updateVariety, updateVarietyStock } from '@/lib/api';
+import { fetchAdminVarieties, fetchAdminLocations, updateVariety, updateVarietyStock, updateVarietySortOrder } from '@/lib/api';
 
 const CHOC: Record<string, string> = {
   guanaja_70: 'Guanaja 70%',
@@ -26,6 +26,7 @@ export default function VarietiesPage() {
         v.forEach((item: any) => {
           initial[item.id] = {
             stock_remaining: item.stock_remaining,
+            sort_order: item.sort_order ?? 0,
             description: item.description ?? '',
             image_url: item.image_url ?? '',
             location_id: item.location_id ?? '',
@@ -33,6 +34,7 @@ export default function VarietiesPage() {
           };
         });
         setEdits(initial);
+        setVarieties([...v].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)));
       })
       .catch(() => setError('Failed to load varieties'));
   }, []);
@@ -45,7 +47,8 @@ export default function VarietiesPage() {
     setSaving(prev => ({ ...prev, [id]: true }));
     try {
       const e = edits[id];
-      await Promise.all([
+      const original = varieties.find(v => v.id === id);
+      const calls: Promise<any>[] = [
         updateVariety(id, {
           description: e.description || undefined,
           image_url: e.image_url || undefined,
@@ -53,7 +56,11 @@ export default function VarietiesPage() {
           active: e.active,
         }),
         updateVarietyStock(id, Number(e.stock_remaining)),
-      ]);
+      ];
+      if (original && Number(e.sort_order) !== (original.sort_order ?? 0)) {
+        calls.push(updateVarietySortOrder(id, Number(e.sort_order)));
+      }
+      await Promise.all(calls);
       setSaved(prev => ({ ...prev, [id]: true }));
       setTimeout(() => setSaved(prev => ({ ...prev, [id]: false })), 1500);
       setVarieties(prev => prev.map(v => v.id === id ? { ...v, ...e } : v));
@@ -110,6 +117,16 @@ export default function VarietiesPage() {
                     type="number" min={0}
                     value={e.stock_remaining ?? ''}
                     onChange={ev => patch(v.id, 'stock_remaining', ev.target.value)}
+                    className="font-mono"
+                    style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 10px', fontSize: 13, color: 'var(--text)' }}
+                  />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span className="font-mono" style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>SORT ORDER</span>
+                  <input
+                    type="number" min={0}
+                    value={e.sort_order ?? 0}
+                    onChange={ev => patch(v.id, 'sort_order', ev.target.value)}
                     className="font-mono"
                     style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 10px', fontSize: 13, color: 'var(--text)' }}
                   />
