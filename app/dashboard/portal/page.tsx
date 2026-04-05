@@ -6,6 +6,10 @@ function fmtCAD(cents: number) {
   return `CA$${(cents / 100).toLocaleString('en-CA', { minimumFractionDigits: 2 })}`;
 }
 
+function fmtDate(iso: string) {
+  return iso ? new Date(iso).toLocaleDateString('en-CA') : '—';
+}
+
 export default function PortalPage() {
   const [activity, setActivity] = useState<any>(null);
   const [content, setContent] = useState<any[]>([]);
@@ -61,24 +65,36 @@ export default function PortalPage() {
           <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
             {[
               { label: 'OPTED IN', value: activity.opted_in_count ?? 0 },
-              { label: 'ACTIVE SUBSCRIBERS', value: activity.active_subscribers ?? 0 },
+              { label: 'ACTIVE SUBSCRIBERS', value: activity.total_subscribers ?? 0 },
+              { label: 'TOTAL REVENUE', value: fmtCAD(activity.total_revenue_cents ?? 0) },
+              { label: 'PLATFORM CUT', value: fmtCAD(activity.total_cut_cents ?? 0) },
             ].map(s => (
               <div key={s.label} style={{ background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 20px' }}>
                 <p className="font-mono" style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: 1.5, marginBottom: 6 }}>{s.label}</p>
-                <p className="font-mono" style={{ fontSize: 20, color: 'var(--text)' }}>{s.value}</p>
+                <p className="font-mono" style={{ fontSize: 18, color: 'var(--text)' }}>{s.value}</p>
               </div>
             ))}
           </div>
 
-          {/* Revenue rows */}
-          {activity.revenue && activity.revenue.length > 0 && (
+          {/* Recent access rows */}
+          {activity.recent && activity.recent.length > 0 && (
             <div style={{ background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, marginBottom: 28 }}>
-              <p className="font-mono" style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: 1.5, marginBottom: 14 }}>REVENUE</p>
+              <p className="font-mono" style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: 1.5, marginBottom: 14 }}>RECENT ACCESS</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {activity.revenue.map((r: any, i: number) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <p className="font-mono" style={{ fontSize: 12, color: 'var(--muted)' }}>{r.label ?? r.period ?? r.month ?? `row ${i + 1}`}</p>
-                    <p className="font-mono" style={{ fontSize: 13, color: 'var(--text)' }}>{typeof r.total_cents === 'number' ? fmtCAD(r.total_cents) : JSON.stringify(r)}</p>
+                {activity.recent.map((r: any) => (
+                  <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <p className="font-mono" style={{ fontSize: 12, color: 'var(--text)' }}>
+                        {r.buyer_display_name ?? `buyer #${r.buyer_id}`} → {r.owner_display_name ?? `owner #${r.owner_id}`}
+                      </p>
+                      <p className="font-mono" style={{ fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>
+                        expires {fmtDate(r.expires_at)} · {r.source ?? '—'}
+                      </p>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <p className="font-mono" style={{ fontSize: 12, color: 'var(--text)' }}>{fmtCAD(r.amount_cents ?? 0)}</p>
+                      <p className="font-mono" style={{ fontSize: 9, color: 'var(--muted)' }}>cut {fmtCAD(r.platform_cut_cents ?? 0)}</p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -92,13 +108,13 @@ export default function PortalPage() {
           )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
             {content.map(c => (
-              <div key={c.id} style={{ background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', position: 'relative' }}>
-                {c.image_url && (
-                  <img src={c.image_url} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />
+              <div key={c.id} style={{ background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+                {c.media_url && (
+                  <img src={c.media_url} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />
                 )}
                 <div style={{ padding: '10px 12px' }}>
                   {c.caption && <p className="font-mono" style={{ fontSize: 10, color: 'var(--muted)', marginBottom: 6 }}>{c.caption.slice(0, 60)}{c.caption.length > 60 ? '…' : ''}</p>}
-                  <p className="font-mono" style={{ fontSize: 9, color: 'var(--muted)' }}>{c.user_email ?? `user #${c.user_id}`}</p>
+                  <p className="font-mono" style={{ fontSize: 9, color: 'var(--muted)' }}>{c.display_name ?? `user #${c.user_id}`}</p>
                   <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
                     <button
                       onClick={() => handleDelete(c.id)}

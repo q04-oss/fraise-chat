@@ -25,6 +25,7 @@ export default function PatronagesPage() {
   const [tab, setTab] = useState<'patronages' | 'tokens'>('patronages');
   const [editingId, setEditingId] = useState<number | null>(null);
   const [priceInput, setPriceInput] = useState('');
+  const [priceError, setPriceError] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -36,11 +37,12 @@ export default function PatronagesPage() {
 
   async function handleApprove(id: number) {
     const cents = Math.round(parseFloat(priceInput) * 100);
-    if (!cents || isNaN(cents)) return;
+    if (isNaN(cents) || cents <= 0) { setPriceError('enter a valid price'); return; }
+    setPriceError('');
     setSaving(true);
     try {
-      const updated = await approvePatronage(id, cents);
-      setPatronages(prev => prev.map(p => p.id === id ? { ...p, ...updated } : p));
+      await approvePatronage(id, cents);
+      setPatronages(prev => prev.map(p => p.id === id ? { ...p, approved_by_admin: true, price_per_year_cents: cents } : p));
       setEditingId(null);
       setPriceInput('');
     } catch (err: any) {
@@ -52,11 +54,12 @@ export default function PatronagesPage() {
 
   async function handleAdjust(id: number) {
     const cents = Math.round(parseFloat(priceInput) * 100);
-    if (!cents || isNaN(cents)) return;
+    if (isNaN(cents) || cents <= 0) { setPriceError('enter a valid price'); return; }
+    setPriceError('');
     setSaving(true);
     try {
-      const updated = await adjustPatronagePrice(id, cents);
-      setPatronages(prev => prev.map(p => p.id === id ? { ...p, ...updated } : p));
+      await adjustPatronagePrice(id, cents);
+      setPatronages(prev => prev.map(p => p.id === id ? { ...p, price_per_year_cents: cents } : p));
       setEditingId(null);
       setPriceInput('');
     } catch (err: any) {
@@ -90,46 +93,60 @@ export default function PatronagesPage() {
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                    <p className="font-serif" style={{ fontSize: 16, color: 'var(--text)' }}>{p.display_name ?? p.patron_email ?? `#${p.id}`}</p>
+                    <p className="font-serif" style={{ fontSize: 16, color: 'var(--text)' }}>
+                      {p.patron_display_name ?? p.requester_display_name ?? `#${p.id}`}
+                    </p>
                     <span className="font-mono" style={{ fontSize: 9, letterSpacing: 1, color: STATUS_COLOR[p.status] ?? 'var(--muted)' }}>{p.status}</span>
                   </div>
                   <p className="font-mono" style={{ fontSize: 10, color: 'var(--muted)' }}>
-                    {p.patron_email} · {fmtDate(p.created_at)}
-                    {p.price_cents ? ` · ${fmtCAD(p.price_cents)}` : ''}
-                    {p.platform_cut_cents ? ` (cut: ${fmtCAD(p.platform_cut_cents)})` : ''}
+                    {p.location_name} · {p.season_year}
+                    {p.price_per_year_cents ? ` · ${fmtCAD(p.price_per_year_cents)}/yr` : ''}
+                    {p.years_claimed ? ` · ${p.years_claimed}yr` : ''}
+                    {' · '}{fmtDate(p.created_at)}
                   </p>
-                  {p.note && <p className="font-mono" style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4, fontStyle: 'italic' }}>"{p.note}"</p>}
                 </div>
-                {editingId !== p.id && (p.status === 'pending' || p.status === 'available') && (
+                {editingId !== p.id && !p.approved_by_admin && (
                   <button
-                    onClick={() => { setEditingId(p.id); setPriceInput(p.price_cents ? String(p.price_cents / 100) : ''); }}
+                    onClick={() => { setEditingId(p.id); setPriceInput(p.price_per_year_cents ? String(p.price_per_year_cents / 100) : ''); setPriceError(''); }}
                     className="font-mono"
                     style={{ fontSize: 10, padding: '5px 12px', background: 'none', color: 'var(--accent)', border: '1px solid var(--border)', borderRadius: 7, cursor: 'pointer', flexShrink: 0 }}
                   >
-                    {p.status === 'pending' ? 'approve' : 'adjust'}
+                    approve
+                  </button>
+                )}
+                {editingId !== p.id && p.approved_by_admin && (
+                  <button
+                    onClick={() => { setEditingId(p.id); setPriceInput(p.price_per_year_cents ? String(p.price_per_year_cents / 100) : ''); setPriceError(''); }}
+                    className="font-mono"
+                    style={{ fontSize: 10, padding: '5px 12px', background: 'none', color: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 7, cursor: 'pointer', flexShrink: 0 }}
+                  >
+                    adjust
                   </button>
                 )}
               </div>
 
               {editingId === p.id && (
-                <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <label className="font-mono" style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>PRICE (CA$)</label>
+                <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <label className="font-mono" style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>PRICE/YR (CA$)</label>
                   <input
                     type="number"
+                    min="0.01"
+                    step="0.01"
                     value={priceInput}
-                    onChange={e => setPriceInput(e.target.value)}
+                    onChange={e => { setPriceInput(e.target.value); setPriceError(''); }}
                     className="font-mono"
-                    style={{ width: 100, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 8px', fontSize: 12, color: 'var(--text)' }}
+                    style={{ width: 100, background: 'var(--bg)', border: `1px solid ${priceError ? '#e57373' : 'var(--border)'}`, borderRadius: 6, padding: '5px 8px', fontSize: 12, color: 'var(--text)' }}
                   />
+                  {priceError && <span className="font-mono" style={{ fontSize: 9, color: '#e57373' }}>{priceError}</span>}
                   <button
-                    onClick={() => p.status === 'pending' ? handleApprove(p.id) : handleAdjust(p.id)}
+                    onClick={() => p.approved_by_admin ? handleAdjust(p.id) : handleApprove(p.id)}
                     disabled={saving}
                     className="font-mono"
                     style={{ fontSize: 10, padding: '5px 12px', background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 7, cursor: 'pointer' }}
                   >
-                    {saving ? '…' : p.status === 'pending' ? 'approve' : 'save'}
+                    {saving ? '…' : p.approved_by_admin ? 'save' : 'approve'}
                   </button>
-                  <button onClick={() => { setEditingId(null); setPriceInput(''); }} className="font-mono" style={{ fontSize: 10, padding: '5px 10px', background: 'none', color: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 7, cursor: 'pointer' }}>cancel</button>
+                  <button onClick={() => { setEditingId(null); setPriceInput(''); setPriceError(''); }} className="font-mono" style={{ fontSize: 10, padding: '5px 10px', background: 'none', color: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 7, cursor: 'pointer' }}>cancel</button>
                 </div>
               )}
             </div>
@@ -151,8 +168,10 @@ export default function PatronagesPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                   <p className="font-mono" style={{ fontSize: 11, color: 'var(--muted)', width: 40, flexShrink: 0 }}>#{t.id}</p>
                   <div style={{ flex: 1 }}>
-                    <p className="font-mono" style={{ fontSize: 12, color: 'var(--text)' }}>{t.patron_email ?? t.owner_email ?? '—'}</p>
-                    {t.patronage_id && <p className="font-mono" style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>patronage #{t.patronage_id}</p>}
+                    <p className="font-mono" style={{ fontSize: 12, color: 'var(--text)' }}>{t.patron_display_name ?? `patron #${t.patron_user_id}`}</p>
+                    <p className="font-mono" style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>
+                      {t.location_name ?? '—'}{t.season_year ? ` · ${t.season_year}` : ''}
+                    </p>
                   </div>
                   {t.nfc_token ? (
                     <span className="font-mono" style={{ fontSize: 9, letterSpacing: 1, padding: '3px 10px', borderRadius: 20, background: 'rgba(76,175,80,0.12)', color: '#4caf50' }}>written</span>

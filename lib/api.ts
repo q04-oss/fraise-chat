@@ -564,20 +564,20 @@ export async function fetchAdminPatronages() {
   return json<any[]>(res);
 }
 
-export async function approvePatronage(id: number, price_cents: number) {
+export async function approvePatronage(id: number, price_per_year_cents: number) {
   const res = await fetch(`${BASE}/api/admin/patronages/${id}/approve`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ price_cents }),
+    body: JSON.stringify({ price_per_year_cents }),
   });
   return json<any>(res);
 }
 
-export async function adjustPatronagePrice(id: number, price_cents: number) {
-  const res = await fetch(`${BASE}/api/admin/patronages/${id}/adjust-price`, {
+export async function adjustPatronagePrice(id: number, price_per_year_cents: number) {
+  const res = await fetch(`${BASE}/api/admin/patronages/${id}/price`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ price_cents }),
+    body: JSON.stringify({ price_per_year_cents }),
   });
   return json<any>(res);
 }
