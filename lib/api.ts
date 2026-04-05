@@ -221,6 +221,61 @@ export async function deactivateBeacon(id: number) {
   return json<any>(res);
 }
 
+// ─── Admin: Editorial ────────────────────────────────────────────────────────
+
+export async function fetchAdminEditorial() {
+  const res = await fetch(`${BASE}/api/admin/editorial`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function updateEditorialPiece(id: number, payload: { status?: string; commission_cents?: number; tag?: string; editor_note?: string }) {
+  const res = await fetch(`${BASE}/api/admin/editorial/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return json<any>(res);
+}
+
+// ─── Admin: Revenue ───────────────────────────────────────────────────────────
+
+export async function fetchRevenueSummary() {
+  const res = await fetch(`${BASE}/api/admin/revenue`, { headers: authHeaders() });
+  return json<any>(res);
+}
+
+export async function fetchDailyRevenue(days = 14) {
+  const res = await fetch(`${BASE}/api/admin/revenue/daily?days=${days}`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function fetchReferrals() {
+  const res = await fetch(`${BASE}/api/admin/referrals`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function exportCustomers(): Promise<Blob> {
+  const res = await fetch(`${BASE}/api/admin/customers/export`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.blob();
+}
+
+// ─── Admin: Tokens ────────────────────────────────────────────────────────────
+
+export async function fetchAdminTokens() {
+  const res = await fetch(`${BASE}/api/admin/tokens`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function setTokenNfc(id: number, nfc_token: string) {
+  const res = await fetch(`${BASE}/api/admin/tokens/${id}/nfc`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ nfc_token }),
+  });
+  return json<any>(res);
+}
+
 // ─── Admin: Members ──────────────────────────────────────────────────────────
 
 export async function fetchAdminMemberships() {
