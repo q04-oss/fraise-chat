@@ -22,6 +22,7 @@ const NAV = [
   { href: '/dashboard/shops', label: 'shops' },
   { href: '/dashboard/beacons', label: 'beacons' },
   { href: '/dashboard/jobs', label: 'jobs' },
+  { href: '/dashboard/collectifs', label: 'collectifs' },
   { href: '/dashboard/portal', label: 'portal' },
   { href: '/dashboard/patronages', label: 'patronages' },
   { href: '/dashboard/greenhouses', label: 'greenhouses' },

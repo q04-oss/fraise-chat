@@ -537,6 +537,22 @@ export async function addEmployerStatement(applicationId: number, statement: str
   return json<any>(res);
 }
 
+// ─── Admin: Collectifs ────────────────────────────────────────────────────────
+
+export async function fetchAdminCollectifs() {
+  const res = await fetch(`${BASE}/api/admin/collectifs`, { headers: authHeaders() });
+  return json<any[]>(res);
+}
+
+export async function respondToCollectif(id: number, response: 'accepted' | 'declined', note?: string) {
+  const res = await fetch(`${BASE}/api/admin/collectifs/${id}/respond`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ response, note }),
+  });
+  return json<any>(res);
+}
+
 // ─── Admin: Portal ────────────────────────────────────────────────────────────
 
 export async function fetchPortalActivity() {
