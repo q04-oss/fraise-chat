@@ -108,11 +108,17 @@ export async function decryptFromSender(
  * Private keys never leave the client.
  */
 export async function buildKeyRegistration() {
-  const identity    = await getIdentityKey()
+  const identity     = await getIdentityKey()
   const signedPreKey = await getSignedPreKey()
 
+  // Sign the signed pre-key with the identity key so recipients can verify it
+  const { hmac } = await import('@noble/hashes/hmac')
+  const { sha256 } = await import('@noble/hashes/sha256')
+  const signature = hmac(sha256, identity.privateKey, signedPreKey.publicKey)
+
   return {
-    identityKey: Array.from(identity.publicKey),
-    signedPreKey: Array.from(signedPreKey.publicKey),
+    identityKey:    btoa(String.fromCharCode(...identity.publicKey)),
+    signedPreKey:   btoa(String.fromCharCode(...signedPreKey.publicKey)),
+    signedPreKeySig: btoa(String.fromCharCode(...signature)),
   }
 }

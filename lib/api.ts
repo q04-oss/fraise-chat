@@ -33,9 +33,10 @@ export async function loginWithCode(code: string) {
 
 /** Upload our public keys to the server so others can initiate sessions with us */
 export async function registerPublicKeys(payload: {
-  identityKey: number[]
-  signedPreKey: number[]
-  oneTimePreKeys?: Array<{ id: number; key: number[] }>
+  identityKey: string
+  signedPreKey: string
+  signedPreKeySig: string
+  oneTimePreKeys?: Array<{ id: number; key: string }>
 }) {
   const res = await fetch(`${BASE}/api/keys/register`, {
     method: 'POST',
@@ -45,17 +46,29 @@ export async function registerPublicKeys(payload: {
   return json<{ ok: boolean }>(res);
 }
 
+function b64ToBytes(b64: string): Uint8Array {
+  return Uint8Array.from(atob(b64), c => c.charCodeAt(0))
+}
+
 /** Fetch a recipient's pre-key bundle to establish a session */
 export async function fetchPreKeyBundle(userId: number) {
   const res = await fetch(`${BASE}/api/keys/bundle/${userId}`, { headers: authHeaders() });
-  return json<{
+  const bundle = await json<{
     userId: number
-    identityKey: number[]
-    signedPreKey: number[]
-    signedPreKeySignature: number[]
-    oneTimePreKey?: number[]
+    identityKey: string
+    signedPreKey: string
+    signedPreKeySignature: string
+    oneTimePreKey?: string
     oneTimePreKeyId?: number
   }>(res);
+  return {
+    userId: bundle.userId,
+    identityKey: b64ToBytes(bundle.identityKey),
+    signedPreKey: b64ToBytes(bundle.signedPreKey),
+    signedPreKeySignature: b64ToBytes(bundle.signedPreKeySignature),
+    oneTimePreKey: bundle.oneTimePreKey ? b64ToBytes(bundle.oneTimePreKey) : undefined,
+    oneTimePreKeyId: bundle.oneTimePreKeyId,
+  }
 }
 
 // ─── Conversations ────────────────────────────────────────────────────────────
@@ -82,17 +95,7 @@ export async function sendMessage(recipientId: number, body: string) {
   const encryptedBody = await encryptForRecipient(
     recipientId,
     body,
-    async (userId) => {
-      const bundle = await fetchPreKeyBundle(userId)
-      return {
-        userId: bundle.userId,
-        identityKey: new Uint8Array(bundle.identityKey),
-        signedPreKey: new Uint8Array(bundle.signedPreKey),
-        signedPreKeySignature: new Uint8Array(bundle.signedPreKeySignature),
-        oneTimePreKey: bundle.oneTimePreKey ? new Uint8Array(bundle.oneTimePreKey) : undefined,
-        oneTimePreKeyId: bundle.oneTimePreKeyId,
-      }
-    }
+    fetchPreKeyBundle
   )
 
   const res = await fetch(`${BASE}/api/messages`, {

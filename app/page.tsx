@@ -18,6 +18,28 @@ export default function LoginPage() {
     try {
       const session = await loginWithCode(code.trim());
       saveSession(session);
+
+      // Register public keys after login so others can initiate E2E sessions with us.
+      // Keys are generated once and persisted in IndexedDB — private keys never leave device.
+      try {
+        const { buildKeyRegistration } = await import('@/lib/session');
+        const { generateOneTimePreKeys } = await import('@/lib/keyStore');
+        const { registerPublicKeys } = await import('@/lib/api');
+
+        const registration = await buildKeyRegistration();
+        const oneTimePreKeys = await generateOneTimePreKeys(10);
+
+        await registerPublicKeys({
+          ...registration,
+          oneTimePreKeys: oneTimePreKeys.map(k => ({
+            id: k.id,
+            key: btoa(String.fromCharCode(...k.publicKey)),
+          })),
+        });
+      } catch {
+        // Non-fatal — messaging will still work, just without pre-key upload
+      }
+
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message === 'invalid_code' ? 'invalid code' : 'something went wrong');
