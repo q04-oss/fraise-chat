@@ -29,6 +29,35 @@ export async function loginWithCode(code: string) {
   return json<{ token: string; user_id: number; display_name: string | null; business_id: number | null; fraise_chat_email: string | null }>(res);
 }
 
+// ─── Keys ─────────────────────────────────────────────────────────────────────
+
+/** Upload our public keys to the server so others can initiate sessions with us */
+export async function registerPublicKeys(payload: {
+  identityKey: number[]
+  signedPreKey: number[]
+  oneTimePreKeys?: Array<{ id: number; key: number[] }>
+}) {
+  const res = await fetch(`${BASE}/api/keys/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return json<{ ok: boolean }>(res);
+}
+
+/** Fetch a recipient's pre-key bundle to establish a session */
+export async function fetchPreKeyBundle(userId: number) {
+  const res = await fetch(`${BASE}/api/keys/bundle/${userId}`, { headers: authHeaders() });
+  return json<{
+    userId: number
+    identityKey: number[]
+    signedPreKey: number[]
+    signedPreKeySignature: number[]
+    oneTimePreKey?: number[]
+    oneTimePreKeyId?: number
+  }>(res);
+}
+
 // ─── Conversations ────────────────────────────────────────────────────────────
 
 export async function fetchConversations() {
@@ -41,11 +70,35 @@ export async function fetchThread(userId: number) {
   return json<any[]>(res);
 }
 
+/**
+ * Send an encrypted message.
+ * The body is encrypted client-side before transmission.
+ * The server stores ciphertext only — it cannot read message content.
+ */
 export async function sendMessage(recipientId: number, body: string) {
+  // Dynamic import to keep crypto out of SSR bundle
+  const { encryptForRecipient } = await import('./session')
+
+  const encryptedBody = await encryptForRecipient(
+    recipientId,
+    body,
+    async (userId) => {
+      const bundle = await fetchPreKeyBundle(userId)
+      return {
+        userId: bundle.userId,
+        identityKey: new Uint8Array(bundle.identityKey),
+        signedPreKey: new Uint8Array(bundle.signedPreKey),
+        signedPreKeySignature: new Uint8Array(bundle.signedPreKeySignature),
+        oneTimePreKey: bundle.oneTimePreKey ? new Uint8Array(bundle.oneTimePreKey) : undefined,
+        oneTimePreKeyId: bundle.oneTimePreKeyId,
+      }
+    }
+  )
+
   const res = await fetch(`${BASE}/api/messages`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ recipient_id: recipientId, body }),
+    body: JSON.stringify({ recipient_id: recipientId, body: encryptedBody, encrypted: true }),
   });
   return json<any>(res);
 }

@@ -26,8 +26,29 @@ export default function ThreadPage() {
     if (s) setMyId(s.user_id);
   }, []);
 
+  const decryptMessages = async (msgs: any[]): Promise<any[]> => {
+    if (typeof window === 'undefined') return msgs;
+    const { decryptFromSender } = await import('@/lib/session');
+    return Promise.all(msgs.map(async (m) => {
+      if (!m.encrypted || m.type !== 'text') return m;
+      try {
+        const plaintext = await decryptFromSender(
+          m.sender_id,
+          m.body,
+          m.sender_identity_key ? new Uint8Array(m.sender_identity_key) : undefined,
+          m.ephemeral_key ? new Uint8Array(m.ephemeral_key) : undefined,
+          m.one_time_pre_key_id
+        );
+        return { ...m, body: plaintext };
+      } catch {
+        return { ...m, body: '🔒 unable to decrypt' };
+      }
+    }));
+  };
+
   const load = () => {
     fetchThread(otherId)
+      .then(decryptMessages)
       .then(setMessages)
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -36,7 +57,9 @@ export default function ThreadPage() {
   useEffect(() => { load(); }, [otherId]);
 
   useEffect(() => {
-    const interval = setInterval(() => fetchThread(otherId).then(setMessages).catch(() => {}), 5000);
+    const interval = setInterval(() =>
+      fetchThread(otherId).then(decryptMessages).then(setMessages).catch(() => {}),
+    5000);
     return () => clearInterval(interval);
   }, [otherId]);
 
