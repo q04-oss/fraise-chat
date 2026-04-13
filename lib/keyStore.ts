@@ -85,14 +85,17 @@ export async function getSignedPreKey(): Promise<KeyPair> {
 /** Generate a batch of one-time pre-keys */
 export async function generateOneTimePreKeys(count = 10): Promise<Array<{ id: number; publicKey: Uint8Array }>> {
   const db = await getDB()
-  const allKeys = await db.getAll('oneTimePreKeys')
+  // Single readwrite transaction so concurrent calls can't compute the same nextId
+  const tx = db.transaction('oneTimePreKeys', 'readwrite')
+  const store = tx.objectStore('oneTimePreKeys')
+  const allKeys = await store.getAll()
   const nextId  = allKeys.length > 0 ? Math.max(...allKeys.map(k => k.id)) + 1 : 1
 
   const result: Array<{ id: number; publicKey: Uint8Array }> = []
   for (let i = 0; i < count; i++) {
     const id = nextId + i
     const kp = generateKeyPair()
-    await db.put('oneTimePreKeys', {
+    await store.put({
       id,
       pub: Array.from(kp.publicKey),
       priv: Array.from(kp.privateKey),
@@ -100,16 +103,29 @@ export async function generateOneTimePreKeys(count = 10): Promise<Array<{ id: nu
     })
     result.push({ id, publicKey: kp.publicKey })
   }
+  await tx.done
   return result
 }
 
-/** Retrieve and mark a one-time pre-key as used */
-export async function consumeOneTimePreKey(id: number): Promise<KeyPair | null> {
+/** Read a one-time pre-key without consuming it (used during X3DH before session is durable) */
+export async function getOneTimePreKeyPair(id: number): Promise<KeyPair | null> {
   const db = await getDB()
   const stored = await db.get('oneTimePreKeys', id)
   if (!stored || stored.used) return null
-  await db.put('oneTimePreKeys', { ...stored, used: true })
   return keyPairFromStorable({ pub: stored.pub, priv: stored.priv })
+}
+
+/** Mark a one-time pre-key as used (call only after session has been durably saved) */
+export async function consumeOneTimePreKey(id: number): Promise<void> {
+  const db = await getDB()
+  // Single readwrite transaction to prevent double-consume under concurrent access
+  const tx = db.transaction('oneTimePreKeys', 'readwrite')
+  const store = tx.objectStore('oneTimePreKeys')
+  const stored = await store.get(id)
+  if (stored && !stored.used) {
+    await store.put({ ...stored, used: true })
+  }
+  await tx.done
 }
 
 // ─── Sessions (Ratchet State) ─────────────────────────────────────────────────

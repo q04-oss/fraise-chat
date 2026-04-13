@@ -29,19 +29,18 @@ export default function ThreadPage() {
   const decryptMessages = async (msgs: any[]): Promise<any[]> => {
     if (typeof window === 'undefined') return msgs;
     const { decryptFromSender } = await import('@/lib/session');
+    // Read myId directly from auth to avoid stale-closure race on first render
+    const { getSession: getAuthSession } = await import('@/lib/auth');
+    const ownId = getAuthSession()?.user_id ?? null;
     return Promise.all(msgs.map(async (m) => {
       if (!m.encrypted || m.type !== 'text') return m;
+      // We sent this message — we already know the plaintext, skip decryption
+      if (ownId !== null && m.sender_id === ownId) return m;
       try {
-        const plaintext = await decryptFromSender(
-          m.sender_id,
-          m.body,
-          m.sender_identity_key ? new Uint8Array(m.sender_identity_key) : undefined,
-          m.ephemeral_key ? new Uint8Array(m.ephemeral_key) : undefined,
-          m.one_time_pre_key_id
-        );
+        const plaintext = await decryptFromSender(m.sender_id, m.body);
         return { ...m, body: plaintext };
       } catch {
-        return { ...m, body: '🔒 unable to decrypt' };
+        return { ...m, body: '[unable to decrypt]' };
       }
     }));
   };

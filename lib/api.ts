@@ -89,21 +89,25 @@ export async function fetchThread(userId: number) {
  * The server stores ciphertext only — it cannot read message content.
  */
 export async function sendMessage(recipientId: number, body: string) {
-  // Dynamic import to keep crypto out of SSR bundle
+  // Dynamic imports to keep crypto out of SSR bundle
   const { encryptForRecipient } = await import('./session')
+  const { saveSession }         = await import('./keyStore')
 
-  const encryptedBody = await encryptForRecipient(
-    recipientId,
-    body,
-    fetchPreKeyBundle
-  )
+  // Encrypt — returns newState but does NOT persist it yet
+  const { wire, newState } = await encryptForRecipient(recipientId, body, fetchPreKeyBundle)
 
   const res = await fetch(`${BASE}/api/messages`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ recipient_id: recipientId, body: encryptedBody, encrypted: true }),
+    body: JSON.stringify({ recipient_id: recipientId, body: wire, encrypted: true }),
   });
-  return json<any>(res);
+  const result = await json<any>(res);
+
+  // Persist ratchet state only after the server confirmed receipt —
+  // prevents desync if the POST fails or times out
+  await saveSession(recipientId, newState)
+
+  return result;
 }
 
 // ─── Offers ───────────────────────────────────────────────────────────────────

@@ -21,23 +21,36 @@ export default function LoginPage() {
 
       // Register public keys after login so others can initiate E2E sessions with us.
       // Keys are generated once and persisted in IndexedDB — private keys never leave device.
-      try {
+      // Retry up to 3 times; surface failure so the operator knows messaging is degraded.
+      {
         const { buildKeyRegistration } = await import('@/lib/session');
         const { generateOneTimePreKeys } = await import('@/lib/keyStore');
         const { registerPublicKeys } = await import('@/lib/api');
 
-        const registration = await buildKeyRegistration();
-        const oneTimePreKeys = await generateOneTimePreKeys(10);
-
-        await registerPublicKeys({
-          ...registration,
-          oneTimePreKeys: oneTimePreKeys.map(k => ({
-            id: k.id,
-            key: btoa(String.fromCharCode(...k.publicKey)),
-          })),
-        });
-      } catch {
-        // Non-fatal — messaging will still work, just without pre-key upload
+        let lastError: unknown;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            const registration   = await buildKeyRegistration();
+            const oneTimePreKeys = await generateOneTimePreKeys(10);
+            await registerPublicKeys({
+              ...registration,
+              oneTimePreKeys: oneTimePreKeys.map(k => ({
+                id: k.id,
+                key: btoa(String.fromCharCode(...k.publicKey)),
+              })),
+            });
+            lastError = null;
+            break;
+          } catch (err) {
+            lastError = err;
+          }
+        }
+        if (lastError) {
+          // Key registration failed — show warning but allow login to continue
+          setError('signed in, but key registration failed — encrypted messaging may be unavailable');
+          setLoading(false);
+          return;
+        }
       }
 
       router.push('/dashboard');
