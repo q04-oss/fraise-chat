@@ -29,6 +29,48 @@ export async function loginWithCode(code: string) {
   return json<{ token: string; user_id: number; display_name: string | null; business_id: number | null; fraise_chat_email: string | null }>(res);
 }
 
+// ─── Keys ─────────────────────────────────────────────────────────────────────
+
+/** Upload our public keys to the server so others can initiate sessions with us */
+export async function registerPublicKeys(payload: {
+  identityKey: string
+  signedPreKey: string
+  signedPreKeySig: string
+  oneTimePreKeys?: Array<{ id: number; key: string }>
+}) {
+  const res = await fetch(`${BASE}/api/keys/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return json<{ ok: boolean }>(res);
+}
+
+function b64ToBytes(b64: string): Uint8Array {
+  return Uint8Array.from(atob(b64), c => c.charCodeAt(0))
+}
+
+/** Fetch a recipient's pre-key bundle to establish a session */
+export async function fetchPreKeyBundle(userId: number) {
+  const res = await fetch(`${BASE}/api/keys/bundle/${userId}`, { headers: authHeaders() });
+  const bundle = await json<{
+    userId: number
+    identityKey: string
+    signedPreKey: string
+    signedPreKeySignature: string
+    oneTimePreKey?: string
+    oneTimePreKeyId?: number
+  }>(res);
+  return {
+    userId: bundle.userId,
+    identityKey: b64ToBytes(bundle.identityKey),
+    signedPreKey: b64ToBytes(bundle.signedPreKey),
+    signedPreKeySignature: b64ToBytes(bundle.signedPreKeySignature),
+    oneTimePreKey: bundle.oneTimePreKey ? b64ToBytes(bundle.oneTimePreKey) : undefined,
+    oneTimePreKeyId: bundle.oneTimePreKeyId,
+  }
+}
+
 // ─── Conversations ────────────────────────────────────────────────────────────
 
 export async function fetchConversations() {
@@ -41,13 +83,31 @@ export async function fetchThread(userId: number) {
   return json<any[]>(res);
 }
 
+/**
+ * Send an encrypted message.
+ * The body is encrypted client-side before transmission.
+ * The server stores ciphertext only — it cannot read message content.
+ */
 export async function sendMessage(recipientId: number, body: string) {
+  // Dynamic imports to keep crypto out of SSR bundle
+  const { encryptForRecipient } = await import('./session')
+  const { saveSession }         = await import('./keyStore')
+
+  // Encrypt — returns newState but does NOT persist it yet
+  const { wire, newState } = await encryptForRecipient(recipientId, body, fetchPreKeyBundle)
+
   const res = await fetch(`${BASE}/api/messages`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ recipient_id: recipientId, body }),
+    body: JSON.stringify({ recipient_id: recipientId, body: wire, encrypted: true }),
   });
-  return json<any>(res);
+  const result = await json<any>(res);
+
+  // Persist ratchet state only after the server confirmed receipt —
+  // prevents desync if the POST fails or times out
+  await saveSession(recipientId, newState)
+
+  return result;
 }
 
 // ─── Offers ───────────────────────────────────────────────────────────────────

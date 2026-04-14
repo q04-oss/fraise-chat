@@ -8,6 +8,11 @@
     "start": "next start"
   },
   "dependencies": {
+    "@noble/ciphers": "^2.2.0",
+    "@noble/curves": "^2.2.0",
+    "@noble/hashes": "^2.2.0",
+    "@signalapp/libsignal-client": "^0.92.1",
+    "idb": "^8.0.3",
     "next": "16.2.2",
     "react": "19.2.4",
     "react-dom": "19.2.4"

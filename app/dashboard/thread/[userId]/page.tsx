@@ -26,8 +26,28 @@ export default function ThreadPage() {
     if (s) setMyId(s.user_id);
   }, []);
 
+  const decryptMessages = async (msgs: any[]): Promise<any[]> => {
+    if (typeof window === 'undefined') return msgs;
+    const { decryptFromSender } = await import('@/lib/session');
+    // Read myId directly from auth to avoid stale-closure race on first render
+    const { getSession: getAuthSession } = await import('@/lib/auth');
+    const ownId = getAuthSession()?.user_id ?? null;
+    return Promise.all(msgs.map(async (m) => {
+      if (!m.encrypted || m.type !== 'text') return m;
+      // We sent this message — we already know the plaintext, skip decryption
+      if (ownId !== null && m.sender_id === ownId) return m;
+      try {
+        const plaintext = await decryptFromSender(m.sender_id, m.body);
+        return { ...m, body: plaintext };
+      } catch {
+        return { ...m, body: '[unable to decrypt]' };
+      }
+    }));
+  };
+
   const load = () => {
     fetchThread(otherId)
+      .then(decryptMessages)
       .then(setMessages)
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -36,7 +56,9 @@ export default function ThreadPage() {
   useEffect(() => { load(); }, [otherId]);
 
   useEffect(() => {
-    const interval = setInterval(() => fetchThread(otherId).then(setMessages).catch(() => {}), 5000);
+    const interval = setInterval(() =>
+      fetchThread(otherId).then(decryptMessages).then(setMessages).catch(() => {}),
+    5000);
     return () => clearInterval(interval);
   }, [otherId]);
 
