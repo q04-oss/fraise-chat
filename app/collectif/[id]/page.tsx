@@ -84,7 +84,7 @@ export default function CollectifPublicPage() {
         {/* Header */}
         <div style={{ marginBottom: 24 }}>
           <p className="font-mono" style={{ fontSize: 9, letterSpacing: 2, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 6 }}>
-            Maison Fraise — Collectif
+            box fraise — collectif
           </p>
           <p className="font-mono" style={{ fontSize: 10, letterSpacing: 1.5, color: isOpen ? 'var(--accent)' : 'var(--muted)', textTransform: 'uppercase', marginBottom: 14 }}>
             {STATUS_LABEL[collectif.status] ?? collectif.status}
@@ -144,8 +144,8 @@ export default function CollectifPublicPage() {
 
         {/* CTA */}
         <div style={{ textAlign: 'center' }}>
-          <p className="font-serif" style={{ fontSize: 20, color: 'var(--text)', marginBottom: 8 }}>
-            Maison Fraise
+          <p className="font-mono" style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', marginBottom: 8 }}>
+            box fraise
           </p>
           <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.6, marginBottom: 20 }}>
             Join the collectif and commit to this purchase through the app.

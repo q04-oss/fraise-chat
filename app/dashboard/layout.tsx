@@ -57,8 +57,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         flexShrink: 0,
       }}>
         <div style={{ padding: '0 24px', marginBottom: 32 }}>
-          <p className="font-serif" style={{ fontSize: 18, color: 'var(--text)' }}>Maison Fraise</p>
-          <p className="font-mono" style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: 2, marginTop: 4 }}>fraise.chat</p>
+          <p className="font-mono" style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>box fraise</p>
+          <p className="font-mono" style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: 2, marginTop: 4 }}>fraise.chat</p>
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
@@ -73,9 +73,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   padding: '10px 24px',
                   fontSize: 11,
                   letterSpacing: 1,
-                  color: active ? 'var(--accent)' : 'var(--muted)',
-                  background: active ? 'rgba(201,151,58,0.07)' : 'transparent',
-                  borderLeft: active ? '2px solid var(--accent)' : '2px solid transparent',
+                  color: active ? 'var(--text)' : 'var(--muted)',
+                  background: active ? 'var(--card)' : 'transparent',
+                  borderLeft: active ? '2px solid var(--text)' : '2px solid transparent',
                 }}
               >
                 {item.label}

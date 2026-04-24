@@ -1,10 +1,10 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@400&family=DM+Mono:wght@400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap');
 
 :root {
-  --accent: #C9973A;
-  --bg: #F7F5F2;
-  --panel: #FFFFFF;
+  --accent: #1C1C1E;
+  --bg: #FFFFFF;
+  --panel: #F7F5F2;
   --text: #1C1C1E;
   --muted: #8E8E93;
   --border: #E5E1DA;
@@ -16,13 +16,13 @@
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'DM Mono', monospace;
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
 }
 
-.font-serif   { font-family: 'Playfair Display', serif; font-weight: 700; }
-.font-serif-i { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 400; }
+.font-serif   { font-family: 'DM Mono', monospace; font-weight: 500; }
+.font-serif-i { font-family: 'DM Mono', monospace; font-style: normal; }
 .font-mono    { font-family: 'DM Mono', monospace; }
 
 input, textarea, button, select { font-family: 'DM Mono', monospace; font-size: 13px; }
