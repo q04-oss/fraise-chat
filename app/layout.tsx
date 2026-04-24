@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'fraise.chat',
-  description: 'Maison Fraise shop dashboard',
+  description: 'box fraise',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
